@@ -11,7 +11,7 @@ const ProductGrid: React.FC<ProductGridProps> = ({ products, selectedProductIds 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
       {products.map((product) => (
-        <div key={product.id} className="bg-white shadow-md rounded-lg overflow-hidden flex flex-col">
+        <div key={product._id} className="bg-white shadow-md rounded-lg overflow-hidden flex flex-col">
           <div className="relative pt-[100%] bg-gray-100">
             <img 
               src={product.imagen_url || product.imagen} 
@@ -52,11 +52,11 @@ const ProductGrid: React.FC<ProductGridProps> = ({ products, selectedProductIds 
                 <input
                   type="checkbox"
                   name="compareProduct"
-                  value={product.id}
-                  checked={selectedProductIds.includes(product.id)}
-                  onChange={() => onSelectProduct(product.id)}
+                  value={product._id}
+                  checked={selectedProductIds.includes(product._id)}
+                  onChange={() => onSelectProduct(product._id)}
                   className="form-checkbox h-5 w-5 text-blue-600"
-                  disabled={selectedProductIds.length >= 2 && !selectedProductIds.includes(product.id)}
+                  disabled={selectedProductIds.length >= 2 && !selectedProductIds.includes(product._id)}
                 />
                 <span className="ml-2">Comparar</span>
               </label>

@@ -1,7 +1,7 @@
 // src/types.ts
 
 export interface Product {
-    id: string;
+    _id: string;
     titulo: string;
     precio: string | number;
     store?: string;

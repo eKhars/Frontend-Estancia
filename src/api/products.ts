@@ -56,3 +56,23 @@ export const compareProducts = async (category: string, id1: string, id2: string
     throw error;
   }
 };
+
+export const searchProducts = async (query: string, category: string | null): Promise<Product[]> => {
+  try {
+    let url = `${API_BASE_URL}/search`;
+    const params: { q?: string, category?: string } = {};
+    
+    if (query) {
+      params.q = query;
+    }
+    if (category) {
+      params.category = category;
+    }
+
+    const response = await axios.get(url, { params });
+    return response.data;
+  } catch (error) {
+    console.error('Error searching products:', error);
+    throw error;
+  }
+};

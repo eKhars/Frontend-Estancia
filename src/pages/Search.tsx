@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import SearchForm from '../components/SearchForm';
 import ProductGrid from '../components/ProductGrid';
 import Sidebar from '../components/SideBar';
 import ComparisonModal from '../components/ComparisonModal';
-import { getProductsByCategory, compareProducts } from '../api/products';
+import ComparisonBar from '../components/ComparisonBar';
+import { getProductsByCategory, compareProducts, searchProducts } from '../api/products';
 import { Product, FilterState } from '../types';
 
 const Search: React.FC = () => {
@@ -17,36 +17,63 @@ const Search: React.FC = () => {
   const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
   const [isComparing, setIsComparing] = useState(false);
   const [comparisonResult, setComparisonResult] = useState<any>(null);
+  
   const location = useLocation();
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const category = params.get('category');
+    const query = params.get('query');
+
     setSelectedCategory(category);
-  
-    if (category) {
-      setIsLoading(true);
-      getProductsByCategory(category)
-        .then((products: Product[]) => {
-          setSearchResults(products);
-          setFilteredResults(products);
-          
-          const uniqueBrands = Array.from(new Set(
-            products
-              .map(p => p.marca)
-              .filter((brand): brand is string => typeof brand === 'string')
-          ));
-          setAvailableBrands(uniqueBrands);
-          
-          setIsLoading(false);
-        })
-        .catch(err => {
-          console.error('Error fetching products:', err);
-          setError('Error al cargar los productos');
-          setIsLoading(false);
-        });
+    setIsLoading(true);
+
+    if (query) {
+      performSearch(query, category);
+    } else if (category) {
+      loadProductsByCategory(category);
+    } else {
+      setIsLoading(false);
     }
   }, [location]);
+
+  const performSearch = async (query: string, category: string | null) => {
+    try {
+      const products = await searchProducts(query, category);
+      setSearchResults(products);
+      setFilteredResults(products);
+      setAvailableBrands(getUniqueBrands(products));
+      setIsLoading(false);
+    } catch (err) {
+      handleError(err);
+    }
+  };
+
+  const loadProductsByCategory = async (category: string) => {
+    try {
+      const products = await getProductsByCategory(category);
+      setSearchResults(products);
+      setFilteredResults(products);
+      setAvailableBrands(getUniqueBrands(products));
+      setIsLoading(false);
+    } catch (err) {
+      handleError(err);
+    }
+  };
+
+  const getUniqueBrands = (products: Product[]) => {
+    return Array.from(new Set(
+      products
+        .map(p => p.marca)
+        .filter((brand): brand is string => typeof brand === 'string')
+    ));
+  };
+
+  const handleError = (err: any) => {
+    console.error('Error fetching products:', err);
+    setError('Error al cargar los productos');
+    setIsLoading(false);
+  };
 
   const handleFilterChange = (filters: FilterState) => {
     const filtered = searchResults.filter((product: Product) => {
@@ -60,22 +87,22 @@ const Search: React.FC = () => {
       const isInPriceRange = !isNaN(price) && 
         price >= filters.priceRange[0] && 
         price <= filters.priceRange[1];
-  
+
       // Manejo de plataformas
       const isInSelectedPlatforms = filters.selectedPlatforms.length === 0 || 
         (product.plataforma && filters.selectedPlatforms.includes(product.plataforma));
-  
+
       // Manejo de marcas
       const isInSelectedBrands = filters.selectedBrands.length === 0 || 
         (product.marca && filters.selectedBrands.includes(product.marca));
-  
+
       // Manejo de envío gratis
       const hasFreeShipping = !filters.freeShipping || 
         (product.envio && product.envio.toLowerCase().includes('gratis'));
-  
+
       return isInPriceRange && isInSelectedPlatforms && isInSelectedBrands && hasFreeShipping;
     });
-  
+
     setFilteredResults(filtered);
   };
 
@@ -109,7 +136,14 @@ const Search: React.FC = () => {
   const handleCloseComparison = () => {
     setIsComparing(false);
     setComparisonResult(null);
+    setSelectedProductIds([]);
   };
+
+  const handleRemoveProduct = (productId: string) => {
+    setSelectedProductIds(prev => prev.filter(id => id !== productId));
+  };
+
+  const selectedProducts = filteredResults.filter(product => selectedProductIds.includes(product._id));
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -120,7 +154,6 @@ const Search: React.FC = () => {
           availableBrands={availableBrands}
         />
         <div className="flex-grow ml-8">
-          {!selectedCategory && <SearchForm />}
           <h2 className="text-2xl font-bold mb-4">
             {selectedCategory ? `Resultados en ${selectedCategory}` : 'Resultados de búsqueda'}
           </h2>
@@ -129,24 +162,23 @@ const Search: React.FC = () => {
           ) : error ? (
             <p className="text-red-500">{error}</p>
           ) : (
-            <>
-              <ProductGrid 
-                products={filteredResults}
-                selectedProductIds={selectedProductIds}
-                onSelectProduct={handleSelectProduct}
-              />
-              {selectedProductIds.length === 2 && (
-                <button
-                  onClick={handleCompare}
-                  className="mt-4 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-                >
-                  Comparar productos seleccionados
-                </button>
-              )}
-            </>
+            <ProductGrid 
+              products={filteredResults}
+              selectedProductIds={selectedProductIds}
+              onSelectProduct={handleSelectProduct}
+            />
           )}
         </div>
       </div>
+      
+      {selectedProducts.length > 0 && (
+        <ComparisonBar
+          products={selectedProducts}
+          onRemoveProduct={handleRemoveProduct}
+          onCompare={handleCompare}
+        />
+      )}
+
       {isComparing && comparisonResult && (
         <ComparisonModal 
           comparisonResult={comparisonResult}

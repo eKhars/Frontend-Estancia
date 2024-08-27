@@ -14,13 +14,13 @@ const ComparisonModal: React.FC<ComparisonModalProps> = ({ comparisonResult, onC
   const { product1, product2, comparison } = comparisonResult;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white p-8 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
         <h2 className="text-2xl font-bold mb-4">Comparación de Productos</h2>
         <div className="grid grid-cols-2 gap-4">
           <div>
             <h3 className="font-bold">{product1.titulo}</h3>
-            <img src={product1.imagen} alt={product1.titulo} className="w-full h-48 object-contain mb-2" />
+            <img src={product1.imagen_url} alt={product1.titulo} className="w-full h-48 object-contain mb-2" />
             <p>Precio: {product1.precio}</p>
             <p>Marca: {product1.marca || 'N/A'}</p>
             <p>Plataforma: {product1.plataforma || 'N/A'}</p>
@@ -29,7 +29,7 @@ const ComparisonModal: React.FC<ComparisonModalProps> = ({ comparisonResult, onC
           </div>
           <div>
             <h3 className="font-bold">{product2.titulo}</h3>
-            <img src={product2.imagen} alt={product2.titulo} className="w-full h-48 object-contain mb-2" />
+            <img src={product2.imagen_url} alt={product2.titulo} className="w-full h-48 object-contain mb-2" />
             <p>Precio: {product2.precio}</p>
             <p>Marca: {product2.marca || 'N/A'}</p>
             <p>Plataforma: {product2.plataforma || 'N/A'}</p>
