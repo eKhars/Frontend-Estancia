@@ -1,5 +1,3 @@
-// src/components/SideBar.tsx
-
 import React, { useState, useEffect } from 'react';
 import { FilterState } from '../types';
 

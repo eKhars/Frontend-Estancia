@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import ProductGrid from '../components/ProductGrid';
 import Sidebar from '../components/SideBar';
@@ -17,6 +17,8 @@ const Search: React.FC = () => {
   const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
   const [isComparing, setIsComparing] = useState(false);
   const [comparisonResult, setComparisonResult] = useState<any>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 12;
   
   const location = useLocation();
 
@@ -75,9 +77,8 @@ const Search: React.FC = () => {
     setIsLoading(false);
   };
 
-  const handleFilterChange = (filters: FilterState) => {
+  const handleFilterChange = useCallback((filters: FilterState) => {
     const filtered = searchResults.filter((product: Product) => {
-      // Manejo del precio
       let price = 0;
       if (typeof product.precio === 'string') {
         price = parseFloat(product.precio.replace(/[^0-9.-]+/g,""));
@@ -88,15 +89,12 @@ const Search: React.FC = () => {
         price >= filters.priceRange[0] && 
         price <= filters.priceRange[1];
 
-      // Manejo de plataformas
       const isInSelectedPlatforms = filters.selectedPlatforms.length === 0 || 
         (product.plataforma && filters.selectedPlatforms.includes(product.plataforma));
 
-      // Manejo de marcas
       const isInSelectedBrands = filters.selectedBrands.length === 0 || 
         (product.marca && filters.selectedBrands.includes(product.marca));
 
-      // Manejo de envío gratis
       const hasFreeShipping = !filters.freeShipping || 
         (product.envio && product.envio.toLowerCase().includes('gratis'));
 
@@ -104,7 +102,8 @@ const Search: React.FC = () => {
     });
 
     setFilteredResults(filtered);
-  };
+    setCurrentPage(1); 
+  }, [searchResults]);
 
   const handleSelectProduct = (productId: string) => {
     setSelectedProductIds(prev => {
@@ -113,7 +112,7 @@ const Search: React.FC = () => {
       } else if (prev.length < 2) {
         return [...prev, productId];
       }
-      return [prev[1], productId]; // Reemplaza el primer producto seleccionado
+      return [prev[1], productId];
     });
   };
 
@@ -143,6 +142,12 @@ const Search: React.FC = () => {
     setSelectedProductIds(prev => prev.filter(id => id !== productId));
   };
 
+  const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
+
+  const indexOfLastProduct = currentPage * itemsPerPage;
+  const indexOfFirstProduct = indexOfLastProduct - itemsPerPage;
+  const currentProducts = filteredResults.slice(indexOfFirstProduct, indexOfLastProduct);
+
   const selectedProducts = filteredResults.filter(product => selectedProductIds.includes(product._id));
 
   return (
@@ -162,11 +167,19 @@ const Search: React.FC = () => {
           ) : error ? (
             <p className="text-red-500">{error}</p>
           ) : (
-            <ProductGrid 
-              products={filteredResults}
-              selectedProductIds={selectedProductIds}
-              onSelectProduct={handleSelectProduct}
-            />
+            <>
+              <ProductGrid 
+                products={currentProducts}
+                selectedProductIds={selectedProductIds}
+                onSelectProduct={handleSelectProduct}
+              />
+              <Pagination
+                itemsPerPage={itemsPerPage}
+                totalItems={filteredResults.length}
+                paginate={paginate}
+                currentPage={currentPage}
+              />
+            </>
           )}
         </div>
       </div>
@@ -186,6 +199,28 @@ const Search: React.FC = () => {
         />
       )}
     </div>
+  );
+};
+
+const Pagination: React.FC<{ itemsPerPage: number, totalItems: number, paginate: (pageNumber: number) => void, currentPage: number }> = ({ itemsPerPage, totalItems, paginate, currentPage }) => {
+  const pageNumbers = [];
+
+  for (let i = 1; i <= Math.ceil(totalItems / itemsPerPage); i++) {
+    pageNumbers.push(i);
+  }
+
+  return (
+    <nav className="flex justify-center mt-4">
+      <ul className="flex list-none">
+        {pageNumbers.map(number => (
+          <li key={number} className={`mx-1 px-3 py-2 rounded-lg ${currentPage === number ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}>
+            <button onClick={() => paginate(number)} className="focus:outline-none">
+              {number}
+            </button>
+          </li>
+        ))}
+      </ul>
+    </nav>
   );
 };
 
